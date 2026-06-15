@@ -2,6 +2,7 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 
 @shared_task
@@ -50,7 +51,8 @@ def send_confirmation_email(name, email):
 @shared_task
 def send_resume_email(email, token):
 
-    download_link = f"{settings.FRONTEND_URL}/resume/download/{token}/"
+    # download_link = f"{settings.FRONTEND_URL}/resume/download/{token}/"
+    download_link = f"http://localhost:8000{reverse("resume-download", args=[token])}"
 
     subject = "Your requested resume"
 

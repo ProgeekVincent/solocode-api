@@ -1,9 +1,11 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from django.shortcuts import render
+from django.utils import timezone
 from django.http import FileResponse, Http404
 
-from .models import ResumeLead, ResumeDownloadToken, Contact
+from .models import Resume, ResumeLead, ResumeDownloadToken, Contact
 from .serializers import ResumeLeadSerializer, ContactSerializer
 from .tasks import send_resume_email
 
@@ -14,6 +16,9 @@ class ContactCreateView(generics.CreateAPIView):
 
 
 class ResumeLeadCreateView(generics.CreateAPIView):
+    """
+        Collect information of who's downloading resume and send them an email to verify if they are human and verified.
+    """
     serializer_class = ResumeLeadSerializer
     queryset = ResumeLead.objects.all()
 
@@ -28,7 +33,7 @@ class ResumeLeadCreateView(generics.CreateAPIView):
 
         # create secure token
         token_obj = ResumeDownloadToken.objects.create(
-            email=lead.email
+            lead=lead
         )
 
         # send email asynchronously
@@ -46,6 +51,9 @@ class ResumeLeadCreateView(generics.CreateAPIView):
 
 
 class ResumeDownloadView(generics.GenericAPIView):
+    """
+     A view used to give a user access to get the copy of my resume
+    """
 
     def get(self, request, token):
 
@@ -57,12 +65,50 @@ class ResumeDownloadView(generics.GenericAPIView):
         except ResumeDownloadToken.DoesNotExist:
             raise Http404("Invalid or expired link")
 
+        if not token_obj.clicked_at:
+            token_obj.clicked_at = timezone.now()
+            token_obj.save(update_fields=["clicked_at"])
+
+        return render(
+            request,
+            "resume/download.html",
+            {"token": token_obj.token})
+
+
+class ResumeFileDownloadView(generics.GenericAPIView):
+
+    def get(self, request, token):
+
+        try:
+            token_obj = ResumeDownloadToken.objects.get(
+                token=token
+            )
+        except ResumeDownloadToken.DoesNotExist:
+            raise Http404()
+
+        resume = Resume.objects.filter(
+            is_active=True
+        ).first()
+
+        if not resume:
+            raise Http404("Resume not configured")
+
+        token_obj.downloaded_at = timezone.now()
         token_obj.is_used = True
-        token_obj.save()
+        token_obj.save(
+            update_fields=[
+                "downloaded_at",
+                "is_used"
+            ]
+        )
 
-        file_path = "media/resume/my_resume.pdf"
-
-        return FileResponse(
-            open(file_path, "rb"),
+        response = FileResponse(
+            resume.file.open("rb"),
             content_type="application/pdf"
         )
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{resume.file.name.split("/")[-1]}"'
+        )
+
+        return response
