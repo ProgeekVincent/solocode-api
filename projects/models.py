@@ -77,7 +77,7 @@ class Project(models.Model):
 
     featured = models.BooleanField(default=False)
     demo_url = models.URLField(blank=True)
-    repository_host = models.URLField(blank=True)
+    repository_host = models.CharField(max_length=300, blank=True)
     repository_url = models.URLField(blank=True)
 
     start_date = models.DateField(blank=True, null=True)

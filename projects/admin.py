@@ -37,6 +37,8 @@ class ProjectAdmin(admin.ModelAdmin):
         "title",
         "project_type",
         "repository_host",
+        "repository_url",
+        "demo_url",
         "featured",
         "status",
         "display_order",
@@ -69,6 +71,9 @@ class ProjectAdmin(admin.ModelAdmin):
     list_editable = (
     	"featured",
         "display_order",
+        "repository_host",
+        "repository_url",
+        "demo_url"
     )
 
     readonly_fields = (
