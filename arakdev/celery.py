@@ -1,7 +1,7 @@
 import os
 from celery import Celery
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "arakdev.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "arakdev.settings.production")
 
 app = Celery("solocode")
 
